@@ -1,0 +1,19 @@
+{
+    "package": "net.perpetualeve.perpetuallib.misc.mixin",
+    "required": true,
+    "refmap": "perpetuallib.refmap.json",
+    "minVersion": "0.8",
+    "compatibilityLevel": "JAVA_17",
+    "mixins": [
+        "common.enchantments.UnbreakingEnchantmentMixin",
+        "common.item.ItemStackMixin",
+        "common.world.entity.ArrowMixin",
+        "common.world.entity.MobEffectInstanceMixin",
+        "common.world.LivingEntityMixin",
+        "common.world.DamageSourceMixin"
+    ],
+    "client": [],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

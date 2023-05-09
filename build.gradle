@@ -1,0 +1,192 @@
+buildscript {
+    repositories {
+		maven { url = 'https://maven.minecraftforge.net' }
+        maven { url = 'https://repo.spongepowered.org/maven' }
+        maven { url = 'https://maven.parchmentmc.org' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath 'org.parchmentmc:librarian:1.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: "org.spongepowered.mixin"
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
+
+jarJar.enable()
+
+version = '1.0'
+group = 'net.perpetualeve.perpetuallib' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = 'perpetuallib'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+repositories {
+    maven {
+        url = "https://www.cursemaven.com"
+        url = "https://jitpack.io"
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.19.2-43.2.0'
+//  implementation fg.deobf("curse.maven:configured-457570:4011355")
+//	implementation fg.deobf("curse.maven:jei-238222:4087658")
+//	implementation fg.deobf("curse.maven:patchouli-306770:4031402")
+//	implementation fg.deobf("curse.maven:rubidium-574856:3973894")
+//	implementation fg.deobf("curse.maven:oculus-581495:4299147")
+	
+	implementation(group: 'com.fathzer', name: 'javaluator', version: '3.0.3')
+	implementation 'com.github.Speiger:Primitive-Collections:0.8.0'
+    
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+mixin {
+	add sourceSets.main, "perpetuallib.refmap.json"
+	
+	config "perpetuallib.mixins.json"
+}
+
+task fixRunConfiguration(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'net.perpetualeve.perpetuallib.misc.RunConfigFixer'
+    doFirst {
+        args(project.projectDir.absolutePath, configurations.runtimeClasspath.find {it.name.contains('javaluator')}.absolutePath)
+        args(project.projectDir.absolutePath, configurations.runtimeClasspath.find {it.name.contains('Primitive')}.absolutePath)
+    }
+    outputs.upToDateWhen {false}
+}
+
+tasks.withType(Task.class) { // gradle magic that runs for already registered tasks but also for those that are registered later on
+    if (it.name.startsWith('gen') && it.name.endsWith('Runs')) { // as the forge tasks for generating run configurations use Task as base class, filter by name instead
+        it.finalizedBy fixRunConfiguration // this forces gradle to run our task whenever the gen{ide}Runs task is executed
+    }
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+minecraft {
+    mappings channel: 'parchment', version: '2022.11.27-1.19.2'
+    
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            // Recommended logging data for a userdev environment
+            // The markers can be added/remove as needed separated by commas.
+            // "SCAN": For mods scan.
+            // "REGISTRIES": For firing of registry events.
+            // "REGISTRYDUMP": For getting the contents of all registries.
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            // Recommended logging level for the console
+            // You can set various levels here.
+            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
+            property 'forge.logging.console.level', 'debug'
+
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            property 'forge.enabledGameTestNamespaces', 'examplemod'
+
+            mods {
+                perpetuallib {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            property 'forge.logging.console.level', 'debug'
+
+            property 'forge.enabledGameTestNamespaces', 'examplemod'
+
+            mods {
+                perpetuallib {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        // This run config launches GameTestServer and runs all registered gametests, then exits.
+        // By default, the server will crash when no gametests are provided.
+        // The gametest system is also enabled by default for other run configs under the /test command.
+        gameTestServer {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            property 'forge.logging.console.level', 'debug'
+
+            property 'forge.enabledGameTestNamespaces', 'examplemod'
+
+            mods {
+                perpetuallib {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            property 'forge.logging.console.level', 'debug'
+
+            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            args '--mod', 'perpetuallib', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+
+            mods {
+                perpetuallib {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+// Include resources generated by data generators.
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : "perpetuallib",
+                "Specification-Vendor"    : "examplemodsareus",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : "examplemodsareus",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
