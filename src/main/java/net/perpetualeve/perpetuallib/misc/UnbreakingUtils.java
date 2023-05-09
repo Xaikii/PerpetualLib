@@ -73,6 +73,6 @@ public class UnbreakingUtils {
 			return 0;
 		float base = (int) (amount * getUnbreakingChance(event.getValue(), pLevel));
 		int ib = (int) base;
-		return ib + (((base - ib) >= pRandom.nextFloat()) ? 1 : 0);
+		return ib + (((base - ib) >= pRandom.nextFloat()) ? 0 : 1);
 	}
 }
