@@ -71,7 +71,7 @@ public class UnbreakingUtils {
 				pStack, pRandom);
 		if (MinecraftForge.EVENT_BUS.post(event))
 			return 0;
-		float base = (int) (amount * getUnbreakingChance(event.getValue(), pLevel));
+		float base = (amount * getUnbreakingChance(event.getValue(), pLevel));
 		int ib = (int) base;
 		return ib + (((base - ib) >= pRandom.nextFloat()) ? 0 : 1);
 	}
