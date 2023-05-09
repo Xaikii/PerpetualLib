@@ -23,6 +23,9 @@ public class ItemStackMixin {
 	int preVal;
 	int postVal;
 
+	/**
+	 * With this it will always try to reduce durability damage even if it doesnt have Unbreaking Enchantment
+	 */
 	@ModifyConstant(method = "hurt", constant = @Constant(intValue = 0, ordinal = 3))
 	public int unbreakingRequirement(int value) {
 		return -1;
